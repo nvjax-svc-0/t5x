@@ -46,17 +46,17 @@ def _canonicalize_fp8_format(fp8_format):
 
 @gin.configurable
 class TransformerEngineConfig:
-  def __init__(self, enabled=False, fp8_format='fp8_hybrid', margin=0., amax_history_len=1024):
-    assert (_IS_TRANSFORMER_ENGINE_INSTALLED or (not enabled)), \
+  def __init__(self, enable_fp8=False, fp8_format='fp8_hybrid', margin=0., amax_history_len=1024):
+    assert (_IS_TRANSFORMER_ENGINE_INSTALLED or (not enable_fp8)), \
         'Attempt to run transformer engine FP8 without installing transformer_engine.'
 
-    self.enabled = enabled
+    self.enable_fp8 = enable_fp8
     self.fp8_format = _canonicalize_fp8_format(fp8_format)
     self.margin = margin
     self.amax_history_len = amax_history_len
 
   def __str__(self):
-    return f"TransformerEngineConfig: enabled:{self.enabled}," \
+    return f"TransformerEngineConfig: enable_fp8:{self.enable_fp8}," \
            f" fp8_format: {self.fp8_format}, margin: {self.margin}," \
            f" amax_history_len: {self.amax_history_len}."
 
@@ -162,7 +162,7 @@ class TEInstalledHelper(TransformerEngineHelperBase):
                                    amax_history_len=te_config.amax_history_len,
                                    amax_compute_algo="max")
     try:
-      with te.fp8_autocast(enabled=te_config.enabled, fp8_recipe=delay_scaling,
+      with te.fp8_autocast(enabled=te_config.enable_fp8, fp8_recipe=delay_scaling,
                            sharding_resource=te.ShardingResource(dp_mesh_axis, tp_mesh_axis)):
         yield
     finally:
