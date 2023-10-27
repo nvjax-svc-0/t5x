@@ -72,10 +72,6 @@ case $FT_TASK in
     ;;
 esac
 
-if [[ -n "${UNINSTALL_TE:-}" && ${UNINSTALL_TE:-} -ne 0 ]]; then
-  pip uninstall -y transformer_engine
-fi
-
 # Global batch size
 BSIZE=$(( GPUS_PER_NODE * BSIZE_PER_GPU * SLURM_JOB_NUM_NODES / TP_SIZE))
 export GPU_DEVICES=$(seq -s, 0 $((GPUS_PER_NODE - 1)) )
