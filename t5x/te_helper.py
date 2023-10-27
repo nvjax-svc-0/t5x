@@ -15,16 +15,20 @@ from absl import logging
 from contextlib import contextmanager
 import gin
 import jax
+import os
+
+logging.set_verbosity(logging.INFO)
 
 try:
   from transformer_engine.common.recipe import DelayedScaling
   from transformer_engine.common.recipe import Format as FP8Format
   import transformer_engine.jax as te
   _IS_TRANSFORMER_ENGINE_INSTALLED = True
+  logging.info('Transformer Engine is installed')
 
 except ModuleNotFoundError as e:
   _IS_TRANSFORMER_ENGINE_INSTALLED = False
-
+  logging.info('Transformer Engine is not installed')
 
 def _canonicalize_fp8_format(fp8_format):
   if not _IS_TRANSFORMER_ENGINE_INSTALLED:
@@ -243,10 +247,14 @@ class TEInstalledHelper(TransformerEngineHelperBase):
 
 
 class TransformerEngineHelper(TransformerEngineHelperBase):
+  @staticmethod
+  def is_enabled_te():
+    enable_te = bool(int((os.environ.get("ENABLE_TE", False))))
+    return (_IS_TRANSFORMER_ENGINE_INSTALLED and enable_te)
 
   @staticmethod
   def get_helper():
-    if _IS_TRANSFORMER_ENGINE_INSTALLED:
+    if TransformerEngineHelper.is_enabled_te():
       return TEInstalledHelper
     return TENotInstalledHelper
 
