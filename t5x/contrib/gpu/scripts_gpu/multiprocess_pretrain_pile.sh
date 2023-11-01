@@ -58,10 +58,6 @@ fi
 # nsys setting
 WITH_NSYS=${WITH_NSYS:-0}
 
-if [[ -n "${UNINSTALL_TE:-}" && ${UNINSTALL_TE:-} -ne 0 ]]; then
-  pip uninstall -y transformer_engine || true
-fi
-
 # Global batch size
 BSIZE=$(( BSIZE_PER_GPU * NUM_PROCESSES / TP_SIZE))
 DP_SIZE=$((NUM_PROCESSES / TP_SIZE))

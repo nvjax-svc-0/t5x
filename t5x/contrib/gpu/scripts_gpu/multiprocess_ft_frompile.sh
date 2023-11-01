@@ -56,10 +56,6 @@ MAKE_FT_DIR=${MAKE_FT_DIR:-false} # 'true' or 'false'.
 
 WITH_NSYS=${WITH_NSYS:-0}
 
-if [[ -n "${UNINSTALL_TE:-}" && ${UNINSTALL_TE:-} -ne 0 ]]; then
-  pip uninstall -y transformer_engine || true
-fi
-
 case $MAKE_FT_DIR in
   true)
     NEW_DIR=ft_${MODEL_DIR_LOCAL}_$(date +%F_%H-%M-%S)
