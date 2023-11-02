@@ -119,3 +119,4 @@ python3 -u -m t5x.train \
   --gin.TRAIN_STEPS=${TRAIN_STEPS} \
   ${ADDITIONAL_CLI_ARGS}
 
+echo Finished

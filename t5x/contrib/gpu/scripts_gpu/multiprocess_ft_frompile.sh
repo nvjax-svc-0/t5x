@@ -129,3 +129,4 @@ python3 -u -m t5x.train \
   --gin.train_eval/utils.DatasetConfig.pack=${PACK} \
   ${ADDITIONAL_CLI_ARGS}
 
+echo Finished
