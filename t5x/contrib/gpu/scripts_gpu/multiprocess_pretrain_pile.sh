@@ -90,7 +90,6 @@ case $BENCHMARK_MODE in
   ;;
   
   *)
-    export BENCHMARK_ARGS=""
     echo TRAINING
   ;;
  esac
