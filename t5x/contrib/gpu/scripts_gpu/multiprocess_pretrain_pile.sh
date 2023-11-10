@@ -81,8 +81,7 @@ fi
 
 echo "MODEL DIR: ${MODEL_DIR}"
 
-if 
-case $BENCHMARK_MODE in
+case ${BENCHMARK_MODE:-} in
   True)
     rm -rf "${MODEL_DIR}/*"
     ADDITIONAL_CLI_ARGS+=" --gin.train.stats_period=${STAT_PERIOD}"
