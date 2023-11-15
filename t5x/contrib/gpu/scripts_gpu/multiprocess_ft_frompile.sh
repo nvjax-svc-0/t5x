@@ -38,8 +38,13 @@ ADDITIONAL_CLI_ARGS=${ADDITIONAL_CLI_ARGS:-}
 MODEL_DIR=${MODEL_DIR:=model_dir}
 MODEL_DIR=${T5X_WORKSPACE_DIR}/${MODEL_DIR}
 
-NUM_PROCESSES=${NUM_PROCESSES:-${SLURM_STEP_NUM_TASKS}}
 WITH_MP=${WITH_MP:-1}
+# If using slurm:
+#   - NUM_PROCESSES, GPUS_PER_NODE are inferred from slurm output env variables
+# If calling this outside of slurm:
+#   - Set NUM_PROCESSES, GPUS_PER_NODE
+#   - Set ADDITIONAL_CLI_ARGS="--coordinator_address=<ip-add-with-port> --process_count=${NUM_PROCESSES} --process_index=<proc-id>"
+NUM_PROCESSES=${NUM_PROCESSES:-${SLURM_STEP_NUM_TASKS}}
 if [[ -z "$SLURM_STEP_TASKS_PER_NODE" ]]; then
   GPUS_PER_NODE=${GPUS_PER_NODE:-8}
 else
@@ -48,6 +53,8 @@ else
       echo "SLURM_STEP_TASKS_PER_NODE=$SLURM_STEP_TASKS_PER_NODE but this script does not support heterogeneous GPU allocations"
       exit 1
   fi
+  # This egrep infers the number of homoegeneous tasks per node:
+  # If SLURM_STEP_TASKS_PER_NODE=8(x2) then GPUS_PER_NODE=8
   GPUS_PER_NODE=$(echo "$SLURM_STEP_TASKS_PER_NODE" | egrep -o '^[^\(]+')
 fi
 
