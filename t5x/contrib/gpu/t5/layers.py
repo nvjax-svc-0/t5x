@@ -312,8 +312,7 @@ class MultiHeadDotProductAttention(nn.Module):
         value,
         attention_bias,
         dropout_rate=self.dropout_rate,
-        qkv_layout='BTNH',
-        is_training=True)
+        qkv_layout='BTNH')
     else:
       x = dot_product_attention(
           query,
