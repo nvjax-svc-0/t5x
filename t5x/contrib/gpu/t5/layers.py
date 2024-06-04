@@ -29,6 +29,11 @@ from jax import random
 import jax.numpy as jnp
 import numpy as np
 
+import os
+from jax._src.cudnn.fused_attention_stablehlo import (
+  dot_product_attention as cudnn_dot_product_attention,
+  MaskType,
+)
 
 # from flax.linen.partitioning import param_with_axes, with_sharding_constraint
 param_with_axes = nn_partitioning.param_with_axes
@@ -300,16 +305,25 @@ class MultiHeadDotProductAttention(nn.Module):
       dropout_rng = self.make_rng('dropout')
 
     # Apply attention.
-    x = dot_product_attention(
+    if os.environ.get("CUDNN_FLASH_ATTENTION") == "true":
+      x = cudnn_dot_product_attention(
         query,
         key,
         value,
-        bias=attention_bias,
-        dropout_rng=dropout_rng,
+        attention_bias,
         dropout_rate=self.dropout_rate,
-        deterministic=deterministic,
-        dtype=self.dtype,
-        float32_logits=self.float32_logits)
+        qkv_layout='BTNH')
+    else:
+      x = dot_product_attention(
+          query,
+          key,
+          value,
+          bias=attention_bias,
+          dropout_rng=dropout_rng,
+          dropout_rate=self.dropout_rate,
+          deterministic=deterministic,
+          dtype=self.dtype,
+          float32_logits=self.float32_logits)
 
     # Back to the original inputs dimensions.
     out = DenseGeneral(
