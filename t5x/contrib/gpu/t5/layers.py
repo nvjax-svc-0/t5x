@@ -29,6 +29,11 @@ from jax import random
 import jax.numpy as jnp
 import numpy as np
 
+import os
+from jax._src.cudnn.fused_attention_stablehlo import (
+  dot_product_attention as cudnn_dot_product_attention,
+  MaskType,
+)
 
 # from flax.linen.partitioning import param_with_axes, with_sharding_constraint
 param_with_axes = nn_partitioning.param_with_axes
@@ -281,13 +286,22 @@ class MultiHeadDotProductAttention(nn.Module):
           bias = dynamic_vector_slice_in_dim(
               jnp.squeeze(bias, axis=0), jnp.reshape(cur_index, (-1)), 1, -2)
 
+    def get_large_negative_number(dtype):
+      # temp WAR as cuDNN has a bug for subtraction between two large negative value
+      if dtype == "bfloat16":
+        return jnp.asarray(-2 << 40, dtype=dtype)
+      elif dtype == "float16":
+        return jnp.asarray(-2 << 14, dtype=dtype)
+      else:
+        raise ValueError("Unsupported dtype for inputs.")
+
     # Convert the boolean attention mask to an attention bias.
     if mask is not None:
       # attention mask in the form of attention bias
       attention_bias = lax.select(
           mask > 0,
           jnp.full(mask.shape, 0.).astype(self.dtype),
-          jnp.full(mask.shape, -1e10).astype(self.dtype))
+          jnp.full(mask.shape, get_large_negative_number(self.dtype)).astype(self.dtype))
     else:
       attention_bias = None
 
@@ -300,16 +314,25 @@ class MultiHeadDotProductAttention(nn.Module):
       dropout_rng = self.make_rng('dropout')
 
     # Apply attention.
-    x = dot_product_attention(
+    if os.environ.get("CUDNN_FLASH_ATTENTION") == "1":
+      x = cudnn_dot_product_attention(
         query,
         key,
         value,
         bias=attention_bias,
-        dropout_rng=dropout_rng,
         dropout_rate=self.dropout_rate,
-        deterministic=deterministic,
-        dtype=self.dtype,
-        float32_logits=self.float32_logits)
+        qkv_layout='BTNH')
+    else:
+      x = dot_product_attention(
+          query,
+          key,
+          value,
+          bias=attention_bias,
+          dropout_rng=dropout_rng,
+          dropout_rate=self.dropout_rate,
+          deterministic=deterministic,
+          dtype=self.dtype,
+          float32_logits=self.float32_logits)
 
     # Back to the original inputs dimensions.
     out = DenseGeneral(
